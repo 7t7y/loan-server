@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Solicitação</title>
-</head>
-<body>
-<h2>Solicitar Empréstimo</h2>
-<form method="POST">
-<input name="nome" placeholder="Nome" required><br><br>
-<input name="email" type="email" placeholder="Email" required><br><br>
-<input name="telefone" placeholder="Telefone" required><br><br>
-<input name="valor" placeholder="Valor solicitado" required><br><br>
-<button type="submit">Enviar</button>
+<form action="/pagar" method="post">
+  <input type="email" name="email" placeholder="Seu email" required>
+  <button type="submit">Pagar com Pix</button>
 </form>
-</body>
-</html>

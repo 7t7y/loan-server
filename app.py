@@ -1,42 +1,48 @@
-from flask import Flask, render_template, request
-import smtplib
-from email.mime.text import MIMEText
+import os
+import mercadopago
+from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
-EMAIL = "sentinela7proton@gmail.com"
-SENHA = "pcal rhcd pgpk nwgu"
+sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-@app.route("/", methods=["GET", "POST"])
-def form():
-    if request.method == "POST":
-        nome = request.form["nome"]
-        email = request.form["email"]
-        telefone = request.form["telefone"]
-        valor = request.form["valor"]
-
-        corpo = f"""
-Nova solicitação de empréstimo:
-
-Nome: {nome}
-Email: {email}
-Telefone: {telefone}
-Valor solicitado: R$ {valor}
-"""
-
-        msg = MIMEText(corpo)
-        msg["Subject"] = "Nova Solicitação de Empréstimo"
-        msg["From"] = EMAIL
-        msg["To"] = EMAIL
-        msg["Reply-To"] = email
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL, SENHA)
-            server.send_message(msg)
-
-        return "Solicitação enviada com sucesso."
-
+@app.route("/", methods=["GET"])
+def home():
     return render_template("form.html")
 
+@app.route("/pagar", methods=["POST"])
+def pagar():
+    email = request.form["email"]
+
+    payment_data = {
+        "transaction_amount": 10.0,
+        "description": "Acesso ao serviço",
+        "payment_method_id": "pix",
+        "payer": {"email": email},
+        "back_urls": {
+            "success": url_for("sucesso", _external=True),
+            "failure": url_for("erro", _external=True),
+            "pending": url_for("pendente", _external=True),
+        },
+        "auto_return": "approved"
+    }
+
+    result = sdk.payment().create(payment_data)
+    payment = result["response"]
+
+    return redirect(payment["point_of_interaction"]["transaction_data"]["ticket_url"])
+
+@app.route("/sucesso")
+def sucesso():
+    return "Pagamento aprovado. Acesso liberado."
+
+@app.route("/erro")
+def erro():
+    return "Pagamento falhou."
+
+@app.route("/pendente")
+def pendente():
+    return "Pagamento pendente."
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run()
